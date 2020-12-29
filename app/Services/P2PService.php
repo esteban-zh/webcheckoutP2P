@@ -16,23 +16,26 @@ class P2PService {
         $this->secretKey = config('services.placetopay.secret_key');
     }
 
-    public function createRequest(){
-         $response = Http::post('https://test.placetopay.com/redirection/api/session/', [
+    public function createRequest($payment){
+         $response = Http::post($this->endpointBase . '/api/session/', [
             'auth' => $this->getAuthenticationData(),
             'payment' => [
-                 'reference' => '5976030f5575d',//$order->id,
-                 'description' =>'suscripcion anual',
+                 'reference' => $payment->id,
+                 'description' => $payment->description,
                  'amount' => [
                      'currency' => 'COP',
-                     'total' => '1111',//$order->total,
+                     'total' => $payment->amount,
                 ],
             ],
             'expiration' =>date('c', strtotime('1 hour')),
-            'returnUrl' => 'http://127.0.0.1:8000/',//route('orders.show', $order->id),
-            'ipAddress' => '127.0.0.1',//request()->ip(),
-            'userAgent' => 'PlacetoPay Sandbox',//request()->header('User-agent'),
+            'returnUrl' => 'http://127.0.0.1:8000/',
+            'ipAddress' => '127.0.0.1',
+            'userAgent' => 'PlacetoPay Sandbox',
 
         ]);
+        $payment->reference = $response['requestId'];
+        $payment->process_url = $response['processUrl'];
+        $payment->save();
         return $response->json();
     }
 
